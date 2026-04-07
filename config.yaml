@@ -1,0 +1,63 @@
+# Coil Configuration
+# This file contains all configuration options for the Coil recursive DNS recursor.
+# All settings have sensible defaults and can be omitted if not needed.
+
+# ============================================================================
+# Network Settings
+# ============================================================================
+
+# Port to listen on for DNS queries (both UDP and TCP)
+# Default: 53 (standard DNS port, requires root/admin privileges)
+# Valid range: 1-65535
+listen_port: 53
+
+# IP address to bind to
+# Default: 0.0.0.0 (listen on all interfaces)
+# Use 127.0.0.1 to only accept local queries
+listen_address: 0.0.0.0
+
+# ============================================================================
+# Query Settings
+# ============================================================================
+
+# Timeout in seconds for upstream DNS queries
+# Default: 5
+# Valid range: 1 or greater
+# This controls how long to wait for a response from upstream nameservers
+timeout: 5
+
+# Maximum number of retries for failed queries
+# Default: 3
+# Valid range: 0 or greater
+# The server will retry failed queries this many times before giving up
+max_retries: 3
+
+# ============================================================================
+# Cache Settings
+# ============================================================================
+
+# Maximum number of entries to store in the DNS cache
+# Default: 1000
+# Valid range: 0 or greater (0 disables caching)
+# Larger values use more memory but improve performance
+cache_size: 1000
+
+# Default TTL (time-to-live) in seconds for cached entries
+# Default: 3600 (1 hour)
+# Valid range: 0 or greater
+# Individual DNS records may have their own TTL values
+cache_ttl: 3600
+
+# ============================================================================
+# Logging Settings
+# ============================================================================
+
+# Logging level for the DNS server
+# Default: INFO
+# Valid values: DEBUG, INFO, WARNING, ERROR, CRITICAL
+# - DEBUG: Detailed information for debugging
+# - INFO: General informational messages
+# - WARNING: Warning messages for potential issues
+# - ERROR: Error messages for failures
+# - CRITICAL: Critical errors that may cause shutdown
+log_level: INFO

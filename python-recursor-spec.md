@@ -1,0 +1,1 @@
+I want to build a recursive dns server that uses the internet root servers to do full recursion, it should be available to answer queries on port 53, it should have a seperate config file and a seperate root.hints file that contains the current 13 root hint servers. It should be available to answer queries on both udp and tcp.

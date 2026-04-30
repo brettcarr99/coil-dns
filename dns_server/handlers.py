@@ -7,6 +7,7 @@ UDP and TCP handlers for accepting and processing DNS queries from clients.
 import socket
 import threading
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from typing import Callable, Optional
 from dns_server.models import DNSMessage
 from dns_server.parser import DNSMessageParser
@@ -25,13 +26,14 @@ class UDPHandler:
     and sets truncation bit when responses exceed size limits.
     """
     
-    def __init__(self, port: int = 53, address: str = "0.0.0.0"):
+    def __init__(self, port: int = 53, address: str = "0.0.0.0", max_workers: int = 50):
         """
         Initialize UDP handler.
-        
+
         Args:
             port: Port to listen on (default 53)
             address: Address to bind to (default 0.0.0.0)
+            max_workers: Thread pool size for handling requests (default 50)
         """
         self.port = port
         self.address = address
@@ -39,6 +41,7 @@ class UDPHandler:
         self.running = False
         self.parser = DNSMessageParser()
         self.query_handler: Optional[Callable[[DNSMessage, tuple], DNSMessage]] = None
+        self._executor = ThreadPoolExecutor(max_workers=max_workers)
         self.logger = logging.getLogger(__name__)
     
     def set_query_handler(self, handler: Callable[[DNSMessage, tuple], DNSMessage]):
@@ -86,14 +89,15 @@ class UDPHandler:
             return
         
         self.running = False
-        
+
         if self.socket:
             try:
                 self.socket.close()
             except:
                 pass
             self.socket = None
-        
+
+        self._executor.shutdown(wait=False)
         self.logger.info("UDP server stopped")
     
     def _listen_loop(self):
@@ -103,13 +107,7 @@ class UDPHandler:
                 # Receive data from client
                 data, client_addr = self.socket.recvfrom(UDP_BUFFER_SIZE)
                 
-                # Handle request in a separate thread for concurrency
-                handler_thread = threading.Thread(
-                    target=self._handle_request,
-                    args=(data, client_addr),
-                    daemon=True
-                )
-                handler_thread.start()
+                self._executor.submit(self._handle_request, data, client_addr)
                 
             except OSError:
                 # Socket closed or error - exit loop
@@ -234,13 +232,14 @@ class TCPHandler:
     Supports concurrent connections.
     """
     
-    def __init__(self, port: int = 53, address: str = "0.0.0.0"):
+    def __init__(self, port: int = 53, address: str = "0.0.0.0", max_workers: int = 50):
         """
         Initialize TCP handler.
-        
+
         Args:
             port: Port to listen on (default 53)
             address: Address to bind to (default 0.0.0.0)
+            max_workers: Thread pool size for handling connections (default 50)
         """
         self.port = port
         self.address = address
@@ -248,6 +247,7 @@ class TCPHandler:
         self.running = False
         self.parser = DNSMessageParser()
         self.query_handler: Optional[Callable[[DNSMessage, tuple], DNSMessage]] = None
+        self._executor = ThreadPoolExecutor(max_workers=max_workers)
         self.logger = logging.getLogger(__name__)
     
     def set_query_handler(self, handler: Callable[[DNSMessage, tuple], DNSMessage]):
@@ -298,14 +298,15 @@ class TCPHandler:
             return
         
         self.running = False
-        
+
         if self.socket:
             try:
                 self.socket.close()
             except:
                 pass
             self.socket = None
-        
+
+        self._executor.shutdown(wait=False)
         self.logger.info("TCP server stopped")
     
     def _accept_loop(self):
@@ -315,13 +316,7 @@ class TCPHandler:
                 # Accept new connection
                 conn, client_addr = self.socket.accept()
                 
-                # Handle connection in a separate thread
-                handler_thread = threading.Thread(
-                    target=self._handle_connection,
-                    args=(conn, client_addr),
-                    daemon=True
-                )
-                handler_thread.start()
+                self._executor.submit(self._handle_connection, conn, client_addr)
                 
             except OSError:
                 # Socket closed or error - exit loop

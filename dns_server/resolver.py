@@ -5,10 +5,8 @@ Core recursive resolution logic for Coil. Starts with root servers and
 follows referrals down the DNS hierarchy until reaching authoritative answers.
 """
 
-import socket
-import struct
+import random
 import logging
-import threading
 from typing import List, Optional, Set
 from dns_server.models import DNSMessage, DNSHeader, DNSQuestion, DNSRecord
 from dns_server.cache import DNSCache
@@ -55,8 +53,6 @@ class RecursiveResolver:
         self.cache = cache
         self.timeout = timeout
         self.max_retries = max_retries
-        self._query_id_counter = 0
-        self._query_id_lock = threading.Lock()
         self.network_client = NetworkClient(timeout=timeout, max_retries=max_retries)
         self.logger = logging.getLogger(__name__)
         self.logger.info(f"Recursive resolver initialized with {len(root_hints)} root servers")
@@ -358,9 +354,7 @@ class RecursiveResolver:
         Returns:
             DNSMessage query
         """
-        with self._query_id_lock:
-            self._query_id_counter = (self._query_id_counter + 1) % 65536
-            query_id = self._query_id_counter
+        query_id = random.randint(0, 65535)
         
         header = DNSHeader(
             id=query_id,

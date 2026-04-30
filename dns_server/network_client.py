@@ -51,8 +51,9 @@ class NetworkClient:
         for attempt in range(self.max_retries):
             sock = None
             try:
-                # Create UDP socket
+                # Create UDP socket with random source port (Kaminsky defence)
                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                sock.bind(('', 0))
                 sock.settimeout(self.timeout)
                 
                 # Send query
